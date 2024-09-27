@@ -1,0 +1,35 @@
+/*
+============================================================================
+Name        : assignments-lesson-8/2.c
+Author      : Mohamed Ahmed Mohamed Osman
+Version     :
+Copyright   : Your copyright notice
+Description : UART
+============================================================================
+*/
+
+#include "avr/io.h"
+#include "UART.h"
+#include "LCD.h"
+
+uint8_t x = 0 ;
+
+int main(void)
+{
+	LCD_INIT();
+	UART_INIT();
+	LCD_GOTO_XY(1 , 0);
+	LCD_WRITE_STRING("Mohamed Osman");
+	UART_SEND_string("OSMAN ");
+	UART_SEND('G');
+   
+	
+    while (1) 
+    {
+		LCD_GOTO_XY(2 , 0) ;
+		x = UART_RECIEVE();
+		LCD_WRITE_CHARACTER(x);
+    }
+	
+}
+

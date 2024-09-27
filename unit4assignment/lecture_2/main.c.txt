@@ -1,0 +1,32 @@
+/*
+ ============================================================================
+ Name        : assignments-lesson-.c
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : Collision Avoidence
+ ============================================================================
+ */
+
+#include "CA.h"
+
+void Set_Up()
+{
+	CA_state = STATE(CA_Waiting) ;
+}
+
+void main ()
+{
+	volatile int d ;
+	Set_Up() ;
+	while (1)
+	{
+
+		CA_state() ;
+
+		for(d = 0 ; d < 1000 ; d++);
+
+	}
+}
+
+

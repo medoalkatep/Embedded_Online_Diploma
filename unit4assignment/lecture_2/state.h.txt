@@ -1,0 +1,19 @@
+/*
+ ============================================================================
+ Name        : assignments-lesson-.c
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : Collision Avoidence
+ ============================================================================
+ */
+
+#ifndef STATE_H_
+#define STATE_H_
+
+#define STATE_DEFINE(_SETFUN_) void ST_##_SETFUN_()
+
+#define STATE(_SETFUN_) ST_##_SETFUN_
+
+
+#endif

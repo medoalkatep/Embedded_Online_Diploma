@@ -1,0 +1,365 @@
+/*
+ ============================================================================
+ Name        : assignments-8/3
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : STM32F103C6 USART DRIVER
+ ============================================================================
+ */
+
+//-----------------------------
+//Includes
+//-----------------------------
+
+#include "Stm32_F103C6_USART.h"
+
+
+/*===================================================================
+ *             Global Variables
+ * ==================================================================
+ */
+
+USART_Config* Global_USART_Config = NULL ;
+
+
+/*===================================================================
+ *             Generic Macros
+ * ==================================================================
+ */
+
+
+
+/*===================================================================
+ *             Generic Functions
+ * ==================================================================
+ */
+
+
+
+/**================================================================
+ * @Fn               -MCAL_USART_INIT
+ * @brief            -Initializes USART
+ * @param [in]       -USARTx: where x can be (1..3 depending on the device used)
+ * @param [in]       -USART_Config: All USART Configuration
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_USART_INIT(USART_TypDef* USARTx ,USART_Config* USART_Config)
+{
+	Global_USART_Config = USART_Config ;
+	uint32_t Pclock , BRR ;
+
+	// Enable the Clock
+	if ( USARTx == USART1)
+	{
+		RCC_USART1_CLC_EN();
+	}
+	else if ( USARTx == USART2)
+	{
+		RCC_USART2_CLC_EN();
+	}
+	else if ( USARTx == USART3)
+	{
+		RCC_USART3_CLC_EN();
+	}
+
+	// Enable the Module
+	// Bit 13 UE: USART enable
+	USARTx->CR1 |= ( 1 << 13 );
+
+	// Enable TX / RX
+	USARTx->CR1 |= USART_Config->USART_MODE ;
+
+	// Payload Width
+	USARTx->CR1 |= USART_Config->USART_Payload ;
+
+	// Configuration of Parity
+	USARTx->CR1 |= USART_Config->USART_Parity ;
+
+	// Configuration the number of stop bits
+	USARTx->CR2 |= USART_Config->USART_StopBits ;
+
+	// USART Hardware Flow Control
+	USARTx->CR3 |= USART_Config->USART_HWFlow ;
+
+	// Configuration of BaudRate
+	if ( USARTx == USART1)
+	{
+		Pclock = MCAL_RCC_GETPCLK2_FREQ();
+	}
+	else
+	{
+		Pclock = MCAL_RCC_GETPCLK1_FREQ();
+	}
+
+	BRR = USART_BRR_Register( Pclock , USART_Config->USART_BaudRate ) ;
+	USARTx->BRR = BRR ;
+
+	// Enable / Disable Interrupts
+	if( USART_Config->USART_IRQ_Enable != USART_IRQ_Enable_None )
+	{
+		USARTx->CR1 |= USART_Config->USART_IRQ_Enable ;
+		// Enable NVIC USARTx IRQ
+		if ( USARTx == USART1)
+		{
+			NVIC_IRQ37_USART1_Enable ;
+		}
+		else if ( USARTx == USART2)
+		{
+			NVIC_IRQ38_USART2_Enable ;
+		}
+		else if ( USARTx == USART3)
+		{
+			NVIC_IRQ39_USART3_Enable ;
+		}
+	}
+}
+
+
+/**================================================================
+ * @Fn               -MCAL_USART_DEINIT
+ * @brief            -DEInitializes USART
+ * @param [in]       -USARTx: where x can be (1..3 depending on the device used)
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_USART_DEINIT(USART_TypDef* USARTx )
+{
+	if ( USARTx == USART1)
+	{
+		RCC_USART1_CLC_DIS() ;
+		NVIC_IRQ37_USART1_Disable ;
+	}
+	else if ( USARTx == USART2)
+	{
+		RCC_USART2_CLC_DIS() ;
+		NVIC_IRQ38_USART2_Disable ;
+	}
+	else if ( USARTx == USART3)
+	{
+		RCC_USART3_CLC_DIS() ;
+		NVIC_IRQ39_USART3_Disable ;
+	}
+}
+
+
+/**================================================================
+ * @Fn               -MCAL_USART_Send_Date
+ * @brief            -Send Buffer on USART
+ * @param [in]       -USARTx: where x can be (1..3 depending on the device used)
+ * @param [in]       -pTXBuffer: Buffer
+ * @param [in]       -PolloingEN: Enable Polling or Disable it
+ * @retval           -none
+ * Note              -none
+ */
+
+
+void MCAL_USART_Send_Date(USART_TypDef* USARTx ,uint16_t *pTXBuffer , enum Polling_Mechanism PolloingEN)
+{
+	// Wait till TXE Flag is Set
+	if(PolloingEN == Enable)
+		while( !( USARTx->SR & ( 1 << 7 ) )  ) ;
+
+	//Check the Date 8Bits or 9Bits
+	if( Global_USART_Config->USART_Payload == USART_Payload_9bit )
+	{
+		USARTx->DR = ( *pTXBuffer & (uint16_t)0x01FF ) ;
+	}
+	else
+	{
+		USARTx->DR = ( *pTXBuffer & (uint8_t)0xFF ) ;
+	}
+}
+
+
+
+/**================================================================
+ * @Fn               -MCAL_USART_WAIT_TC
+ * @brief            -Wait Until All Date have been sent
+ * @param [in]       -USARTx: where x can be (1..3 depending on the device used)
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_USART_WAIT_TC(USART_TypDef* USARTx )
+{
+	// Wait unitl bit 6 is set
+	while( !( USARTx->SR & ( 1 << 6 ) )  ) ;
+}
+
+
+/**================================================================
+ * @Fn               -MCAL_USART_Receive_Date
+ * @brief            -Receive Buffer on USART
+ * @param [in]       -USARTx: where x can be (1..3 depending on the device used)
+ * @param [in]       -pTXBuffer: Buffer
+ * @param [in]       -PolloingEN: Enable Polling or Disable it
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_USART_Receive_Date(USART_TypDef* USARTx ,uint16_t *pRXBuffer , enum Polling_Mechanism PolloingEN)
+{
+	// Wait till RXNE Flag is Set
+	if(PolloingEN == Enable)
+		while( !( USARTx->SR & ( 1 << 5 ) )  ) ;
+
+	//Check the Date 8Bits or 9Bits
+	if( Global_USART_Config->USART_Payload == USART_Payload_9bit )
+	{
+		if( Global_USART_Config->USART_Parity == USART_Parity_None )
+		{
+			// All 9Bits are used
+			*((uint16_t*)pRXBuffer) = USARTx->DR ;
+		}
+		else
+		{
+			// We Will ignore the most significant bit
+			*((uint16_t*)pRXBuffer) = ( USARTx->DR & (uint8_t)0xFF) ;
+		}
+	}
+	else
+	{
+		if( Global_USART_Config->USART_Parity == USART_Parity_None )
+		{
+			// All 8Bits are used
+			*((uint16_t*)pRXBuffer) = ( USARTx->DR & (uint8_t)0xFF) ;
+		}
+		else
+		{
+			// We Will ignore the most significant bit
+			*((uint16_t*)pRXBuffer) = ( USARTx->DR & (uint8_t)0x7F) ; ;
+		}
+	}
+}
+
+
+/**================================================================
+ * @Fn               -MCAL_GPIO_USART_SET_PINS
+ * @brief            -Initializes GPIO Pins
+ * @param [in]       -USARTx: where x can be (1..3 depending on the device used)
+ * @retval           -none
+ * Note              -none
+ */
+
+
+void MCAL_GPIO_USART_SET_PINS(USART_TypDef* USARTx)
+{
+	GPIO_PinConfig_t Pin_cfg ;
+	if ( USARTx == USART1)
+	{
+		// PA9  TX
+		// PA10 RX
+		// PA11 CTS
+		// PA12 RTS
+		Pin_cfg.GPIO_PinNumber = GPIO_PIN_9 ;
+		Pin_cfg.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+		Pin_cfg.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+		MCAL_GPIO_INIT(GPIOA, &Pin_cfg);
+
+		Pin_cfg.GPIO_PinNumber = GPIO_PIN_10 ;
+		Pin_cfg.GPIO_MODE = GPIO_MODE_AF_INPUT ;
+		MCAL_GPIO_INIT(GPIOA, &Pin_cfg);
+
+		if( Global_USART_Config->USART_HWFlow == USART_HWFlow_CTS || Global_USART_Config->USART_HWFlow == USART_HWFlow_CTS_RTS )
+		{
+			Pin_cfg.GPIO_PinNumber = GPIO_PIN_11 ;
+			Pin_cfg.GPIO_MODE = GPIO_MODE_AF_INPUT ;
+			MCAL_GPIO_INIT(GPIOA, &Pin_cfg);
+		}
+		if( Global_USART_Config->USART_HWFlow == USART_HWFlow_RTS || Global_USART_Config->USART_HWFlow == USART_HWFlow_CTS_RTS )
+		{
+			Pin_cfg.GPIO_PinNumber = GPIO_PIN_12 ;
+			Pin_cfg.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+			Pin_cfg.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+			MCAL_GPIO_INIT(GPIOA, &Pin_cfg);
+		}
+	}
+	else if( USARTx == USART2)
+	{
+		// PA2  TX
+		// PA3  RX
+		// PA0  CTS
+		// PA1  RTS
+		Pin_cfg.GPIO_PinNumber = GPIO_PIN_2 ;
+		Pin_cfg.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+		Pin_cfg.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+		MCAL_GPIO_INIT(GPIOA, &Pin_cfg);
+
+		Pin_cfg.GPIO_PinNumber = GPIO_PIN_3 ;
+		Pin_cfg.GPIO_MODE = GPIO_MODE_AF_INPUT ;
+		MCAL_GPIO_INIT(GPIOA, &Pin_cfg);
+
+		if( Global_USART_Config->USART_HWFlow == USART_HWFlow_CTS || Global_USART_Config->USART_HWFlow == USART_HWFlow_CTS_RTS )
+		{
+			Pin_cfg.GPIO_PinNumber = GPIO_PIN_0 ;
+			Pin_cfg.GPIO_MODE = GPIO_MODE_AF_INPUT ;
+			MCAL_GPIO_INIT(GPIOA, &Pin_cfg);
+		}
+		if( Global_USART_Config->USART_HWFlow == USART_HWFlow_RTS || Global_USART_Config->USART_HWFlow == USART_HWFlow_CTS_RTS )
+		{
+			Pin_cfg.GPIO_PinNumber = GPIO_PIN_1 ;
+			Pin_cfg.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+			Pin_cfg.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+			MCAL_GPIO_INIT(GPIOA, &Pin_cfg);
+		}
+	}
+	else if( USARTx == USART3)
+	{
+		// PB10  TX
+		// PB11  RX
+		// PB13  CTS
+		// PB14  RTS
+		Pin_cfg.GPIO_PinNumber = GPIO_PIN_10 ;
+		Pin_cfg.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+		Pin_cfg.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+		MCAL_GPIO_INIT(GPIOB, &Pin_cfg);
+
+		Pin_cfg.GPIO_PinNumber = GPIO_PIN_11 ;
+		Pin_cfg.GPIO_MODE = GPIO_MODE_AF_INPUT ;
+		MCAL_GPIO_INIT(GPIOB, &Pin_cfg);
+
+		if( Global_USART_Config->USART_HWFlow == USART_HWFlow_CTS || Global_USART_Config->USART_HWFlow == USART_HWFlow_CTS_RTS )
+		{
+			Pin_cfg.GPIO_PinNumber = GPIO_PIN_13 ;
+			Pin_cfg.GPIO_MODE = GPIO_MODE_AF_INPUT ;
+			MCAL_GPIO_INIT(GPIOB, &Pin_cfg);
+		}
+		if( Global_USART_Config->USART_HWFlow == USART_HWFlow_RTS || Global_USART_Config->USART_HWFlow == USART_HWFlow_CTS_RTS )
+		{
+			Pin_cfg.GPIO_PinNumber = GPIO_PIN_14 ;
+			Pin_cfg.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+			Pin_cfg.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+			MCAL_GPIO_INIT(GPIOB, &Pin_cfg);
+		}
+	}
+}
+
+
+
+/*==============================================================================================
+ * ==================              ISR Functions              ==================
+ * ==============================================================================================
+ * */
+
+void USART1_IRQHandler(void)
+{
+	Global_USART_Config->P_IRQ_CallBack();
+}
+
+void USART2_IRQHandler(void)
+{
+	Global_USART_Config->P_IRQ_CallBack();
+}
+
+void USART3_IRQHandler(void)
+{
+	Global_USART_Config->P_IRQ_CallBack();
+}
+
+
+
+

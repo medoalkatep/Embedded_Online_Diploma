@@ -1,0 +1,25 @@
+/*
+ ============================================================================
+ Name        : assignments-8/7
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : STM32F103C6 EEPROM DRIVER
+ ============================================================================
+ */
+
+#ifndef EEPROM_DRIVER_EEPROM_H_
+#define EEPROM_DRIVER_EEPROM_H_
+
+#include "Stm32_F103C6_I2C.h"
+
+#define EEPROM_Slave_Address      0x2A
+
+void EEPROM_INIT(void);
+
+unsigned char EEPROM_Write_NBytes(uint16_t Memory_address ,unsigned char* data_out , uint8_t data_length ) ;
+
+unsigned char EEPROM_Read_NBytes(uint16_t Memory_address ,uint8_t* data_in , uint8_t data_length ) ;
+
+
+#endif /* EEPROM_DRIVER_EEPROM_H_ */

@@ -1,0 +1,66 @@
+/*
+ ============================================================================
+ Name        : assignments-7/3
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : STM32F103C6 EXTI DRIVER
+ ============================================================================
+ */
+
+#if !defined(__SOFT_FP__) && defined(__ARM_FP)
+#warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
+#endif
+
+#include "stm32f103x6.h"
+#include "Stm32_F103C6_Gpio.h"
+#include "Stm32_F103C6_EXTI.h"
+#include "LCD.h"
+#include "KeyPad.h"
+
+unsigned int IRQ_flag = 0 ;
+
+void clock_init()
+{
+	// PORT A CLOCK ENABLED
+	RCC_GPIOA_CLC_EN() ;
+	// PORT B CLOCK ENABLED
+	RCC_GPIOB_CLC_EN() ;
+	// AFIO CLOCK ENABLED
+	RCC_AFIO_CLC_EN() ;
+}
+
+void EXTI9_CallBack(void)
+ {
+	IRQ_flag = 1 ;
+	LCD_WRITE_STRING("IRQ EXTI_9 HAS HAPPEND : ") ;
+	wait_time(1000) ;
+}
+
+int main(void)
+{
+	clock_init();
+
+    LCD_INIT() ;
+	LCD_clear_screen() ;
+
+	EXTI_Pinconfig_t EXTI_CFG ;
+	EXTI_CFG.EXTI_Pin = EXTI9PB9 ;
+	EXTI_CFG.Trigger_Case = EXTI_Trigger_Rising ;
+	EXTI_CFG.p_IRQ_CallBack = EXTI9_CallBack ;
+	EXTI_CFG.IRQ_ENABLE = EXTI_IRQ_ENABLE ;
+
+	MCAL_EXTI_GPIO_INIT( & EXTI_CFG) ;
+
+	IRQ_flag = 1 ;
+
+    while (1)
+    {
+		if( IRQ_flag )
+		{
+			LCD_clear_screen() ;
+			IRQ_flag = 0 ;
+		}
+
+    }
+}

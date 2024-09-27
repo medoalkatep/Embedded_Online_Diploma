@@ -1,0 +1,80 @@
+/*
+ ============================================================================
+ Name        : assignments-lesson-.c
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : FIFO
+ ============================================================================
+ */
+#include "fifo.h"
+
+fifo_status fifo_init (fifo_buf_t* fifo , element_type* buf , uint32_t length)
+{
+	if(buf == NULL)
+		return fifo_null ;
+	fifo->base = buf ;
+	fifo->head = buf ;
+	fifo->tail = buf ;
+	fifo->length = length ;
+	fifo->count = 0 ;
+	return fifo_no_error ;
+}
+fifo_status fifo_enqueue (fifo_buf_t* fifo , element_type item)
+{
+	if(!fifo->base || !fifo->head || !fifo->tail)
+		return fifo_null ;
+	if (fifo_is_full(fifo) == fifo_full)
+		return fifo_full ;
+	*(fifo->head) = item ;
+	fifo->count++ ;
+	if (fifo->head == (fifo->base + (fifo->length * sizeof(element_type))))
+		fifo->head = fifo->base ;
+	else
+		fifo->head++ ;
+	return fifo_no_error ;
+}
+fifo_status fifo_dequeue (fifo_buf_t* fifo , element_type* item)
+{
+	if(!fifo->base || !fifo->head || !fifo->tail)
+		return fifo_null ;
+	if (fifo->count == 0)
+		return fifo_empty ;
+	*item = *(fifo->tail);
+	fifo->count-- ;
+	if (fifo->tail == (fifo->base + (fifo->length * sizeof(element_type))))
+		fifo->tail = fifo->base ;
+	else
+		fifo->tail++ ;
+	return fifo_no_error ;
+}
+fifo_status fifo_is_full (fifo_buf_t* fifo)
+{
+	if(!fifo->base || !fifo->head || !fifo->tail)
+		return fifo_null ;
+	if (fifo->count == fifo->length )
+		return fifo_full ;
+	return fifo_no_error ;
+}
+void fifo_print (fifo_buf_t* fifo)
+{
+	element_type* temp ;
+	int i ;
+	if (fifo->count == 0 )
+	{
+		printf("FIFO is empty \n");
+	}
+	else
+	{
+		temp = fifo->tail ;
+		printf("========printing FIFO=========\n");
+		for(i = 0 ; i< fifo->count ; i++)
+		{
+			printf("\t %X \n",*temp);
+			temp++ ;
+
+		}
+		printf("================\n");
+	}
+}
+

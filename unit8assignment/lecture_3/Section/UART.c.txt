@@ -1,0 +1,150 @@
+/*
+============================================================================
+Name        : assignments-lesson-8/3.c
+Author      : Mohamed Ahmed Mohamed Osman
+Version     :
+Copyright   : Your copyright notice
+Description : UART 
+============================================================================
+*/
+
+#include "UART.h"
+
+static uint8_t TX_data ;
+static uint8_t flag_send = 1 ;
+
+void UART_INIT(void)
+{
+// Baud rate
+    // THE Rate is 9600  	
+	UBRRL = 51 ;
+	// Normal Speed Divided by 16
+	clear_bit(UCSRA , U2X) ;
+	
+	
+	
+// frame
+	// Choosing Asynchronous
+	clear_bit(UCSRC , UMSEL);
+	// 8 bit Data
+	set_bit(UCSRC , UCSZ0);
+	set_bit(UCSRC , UCSZ1);
+	clear_bit(UCSRB , UCSZ2);
+	
+	// Enable
+	set_bit(UCSRB , TXEN);
+	set_bit(UCSRB , RXEN);
+	
+}
+
+
+void UART_SEND(uint8_t data)
+{
+	while( !read_bit(UCSRA , UDRE) );
+	UDR = data ;
+}
+
+
+uint8_t UART_RECIEVE(void)
+{
+	while( !read_bit(UCSRA , RXC) );
+	return UDR ;
+}
+
+void UART_SEND_string(uint8_t* data)
+{
+/*	while( !read_bit(UCSRA , UDRE) );
+	while(*data)
+	{
+		UART_SEND(*data);
+		data++ ;
+	}
+*/
+	uint8_t i ;
+	for (i = 0 ; i < data[i] ; i++)
+	{
+		UART_SEND(data[i]);
+	}
+	UART_SEND(defaultstop);
+}
+
+
+void UART_Recieve_string(uint8_t* data)
+{
+	uint8_t i = 0 ;
+	data[i] = UART_RECIEVE();
+	while( data[i] != defaultstop)
+	{
+		i++;
+		data[i] = UART_RECIEVE();
+	}
+	data[i] = '\0';
+}
+
+void UART_SEND_NoBlock(uint8_t data)
+{
+	UDR = data ;
+}
+
+uint8_t UART_RECIEVE_NoBlock(void)
+{
+	return UDR ;
+}
+
+uint8_t UART_Recieve_Check(uint8_t* data)
+{
+	if(read_bit(UCSRA , RXC))
+	{
+		*data = UDR ;
+		return 1 ;
+	}
+	return 0 ;
+}
+
+void UART_TX_Interrupt_EN(void)
+{
+	set_bit(UCSRB , TXCIE);
+}
+
+void UART_TX_Interrupt_DIS(void)
+{
+	clear_bit(UCSRB , TXCIE);
+}
+
+void UART_RX_Interrupt_EN(void)
+{
+	set_bit(UCSRB , RXCIE);
+}
+
+void UART_RX_Interrupt_DIS(void)
+{
+	clear_bit(UCSRB , RXCIE);
+}
+
+void UART_SEND_string_Asyn(uint8_t* data)
+{
+	if(flag_send == 1)
+	{
+		UART_TX_Interrupt_EN();
+		UART_SEND_NoBlock(data[0]);
+		TX_data = data ;
+		flag_send = 0 ;
+	}
+}
+
+/*
+ISR(UART_TX_vect)
+{
+	static uint8_t i = 1 ;
+	if(TX_data[i] != 0 )
+	{
+		UART_SEND_NoBlock(TX_data[i]);
+		i++ ;
+	}
+	else
+	{
+		i = 1 ;
+		flag_send = 1 ;
+	}
+}
+*/

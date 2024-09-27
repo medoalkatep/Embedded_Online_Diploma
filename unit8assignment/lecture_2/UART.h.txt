@@ -1,0 +1,38 @@
+/*
+============================================================================
+Name        : assignments-lesson-8/2.c
+Author      : Mohamed Ahmed Mohamed Osman
+Version     :
+Copyright   : Your copyright notice
+Description : UART
+============================================================================
+*/
+
+
+#ifndef UART_H_
+#define UART_H_
+
+#include "avr/io.h"
+#include "stdio.h"
+#include "stdint.h"
+#include "stdlib.h"
+
+#define set_bit(reg , bit)  (reg |= (1 << bit))
+
+#define clear_bit(reg , bit)  (reg &= ~(1 << bit))
+
+#define read_bit(reg , bit)  ( (reg >> bit) & 1 )
+
+#define toggle_bit(reg , bit)  (reg ^= (1 << bit))
+
+void UART_INIT(void);
+
+
+void UART_SEND(uint8_t data);
+
+
+uint8_t UART_RECIEVE(void);
+
+void UART_SEND_string(unsigned char* data);
+
+#endif /* UART_H_ */

@@ -1,0 +1,458 @@
+/*
+ ============================================================================
+ Name        : assignments-8/7
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : STM32F103C6 I2C DRIVER
+ ============================================================================
+ */
+
+//-----------------------------
+//Includes
+//-----------------------------
+
+#include "Stm32_F103C6_I2C.h"
+#include "Stm32_F103C6_RCC.h"
+
+
+/*===================================================================
+ *             Global Variables
+ * ==================================================================
+ */
+
+I2C_Config  Glopal_I2C_Config[2] = {NULL , NULL} ;
+
+
+/*===================================================================
+ *             Generic Macros
+ * ==================================================================
+ */
+
+#define I2C1_Index    0
+#define I2C2_Index    1
+
+
+
+/*===================================================================
+ *             Generic Functions
+ * ==================================================================
+ */
+
+Flag_Status  I2C_Get_FlagStatus(I2C_TypDef* I2CX , Status flag)
+{
+	Flag_Status bit_status = Reset ;
+	uint32_t flag1 = 0 , flag2 = 0 ;
+	uint32_t lastevent = 0 ;
+	switch(flag)
+	{
+	case I2C_Flag_Busy :
+	{
+		if( (I2CX->SR2) & (I2C_SR2_BUSY) )
+			bit_status = Set ;
+		else
+			bit_status = Reset ;
+		break ;
+	}
+
+	case EV5 :
+	{
+		if( (I2CX->SR1) & (I2C_SR1_SB) )
+			bit_status = Set ;
+		else
+			bit_status = Reset ;
+		break ;
+	}
+
+	case EV6 :
+	{
+		if( (I2CX->SR1) & (I2C_SR1_ADDR) )
+			bit_status = Set ;
+		else
+			bit_status = Reset ;
+		break ;
+	}
+
+	case Master_ByteTX :
+	{
+		flag1 = I2CX->SR1 ;
+		flag2 = I2CX->SR2 ;
+		flag2 = flag2 << 16 ;
+		lastevent = (flag1 | flag2) & (uint32_t)(0x00FFFFFF) ;
+
+		if( ( lastevent & flag ) == flag )
+		{
+			bit_status = Set ;
+		}
+		else
+		{
+			bit_status = Reset ;
+		}
+	}
+
+	case EV8   :
+	case EV8_1 :
+	{
+		if( (I2CX->SR1) & (I2C_SR1_TXE) )
+			bit_status = Set ;
+		else
+			bit_status = Reset ;
+		break ;
+	}
+
+	case EV7 :
+	{
+		if( (I2CX->SR1) & (I2C_SR1_RXNE) )
+			bit_status = Set ;
+		else
+			bit_status = Reset ;
+		break ;
+	}
+
+
+	}
+	return bit_status ;
+}
+
+
+
+void I2C_Generate_Start(I2C_TypDef* I2CX , Function_State NewState , Repeated_Start start)
+{
+	if (start != RepeatedStart)
+	{
+		// Check if the BUS is Idle
+		while(I2C_Get_FlagStatus(I2CX ,I2C_Flag_Busy )) ;
+	}
+
+	if (NewState != dis)
+	{
+		I2CX->CR1 |= I2C_CR1_START ;
+	}
+	else
+	{
+		I2CX->CR1 &= ~(I2C_CR1_START) ;
+	}
+}
+
+void I2C_Generate_Stop(I2C_TypDef* I2CX , Function_State NewState )
+{
+	if(NewState != dis)
+	{
+		I2CX->CR1 |= I2C_CR1_STOP ;
+	}
+	else
+	{
+		I2CX->CR1 &= ~(I2C_CR1_STOP) ;
+	}
+}
+
+
+void I2C_Send_Address(I2C_TypDef* I2CX , uint16_t address , I2C_Direction direction)
+{
+	address = (address << 1) ;
+	if( direction != Transmitter )
+	{
+		address |= 1 << 0 ;
+	}
+	else
+	{
+		address &= ~(1 << 0) ;
+	}
+
+	I2CX->DR = address ;
+}
+
+void I2C_ACK_Config(I2C_TypDef* I2CX , Function_State NewState )
+{
+	if(NewState != dis)
+	{
+		I2CX->CR1 |= I2C_CR1_ACK ;
+	}
+	else
+	{
+		I2CX->CR1 &= ~(I2C_CR1_ACK) ;
+	}
+}
+
+
+/**================================================================
+ * @Fn               -MCAL_I2C_INIT
+ * @brief            -Initializes I2C
+ * @param [in]       -I2Cx: where x can be (1..2 depending on the device used)
+ * @param [in]       -I2C_Config: All I2C Configuration
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_I2C_INIT(I2C_TypDef* I2CX ,I2C_Config* I2C_Config)
+{
+	uint16_t tempreg = 0 , frequency = 0  , result = 0;
+	uint32_t PCLK1 = 8000000 ;
+	if (I2CX == I2C1 )
+	{
+		Glopal_I2C_Config[I2C1_Index] = *I2C_Config ;
+		RCC_I2C1_CLC_EN() ;
+	}
+	else
+	{
+		Glopal_I2C_Config[I2C2_Index] = *I2C_Config ;
+		RCC_I2C2_CLC_EN() ;
+	}
+
+	if(I2C_Config->I2C_Mode == I2C_Mode_I2C )
+	{
+		/*--------------------INIT TIMING---------------------*/
+		// clear CR2 freq bits
+		tempreg = I2CX->CR2 ;
+		tempreg &= ~(I2C_CR2_FREQ_Msk) ;
+
+		PCLK1 = MCAL_RCC_GETPCLK1_FREQ();
+		// 8000000 / 100000 = 8
+		frequency = (uint16_t)(PCLK1 / 1000000) ;
+
+		tempreg |= frequency ;
+		I2CX->CR2 = tempreg ;
+
+		//Configure CCR Register
+		I2CX->CR1 &= ~(I2C_CR1_PE) ;
+		tempreg = 0 ;
+
+		if( (I2C_Config->ClockSpeed == I2C_SCLK_SM_50K) || (I2C_Config->ClockSpeed == I2C_SCLK_SM_100K) )
+		{
+			// CCR = (FPCLK1) / ( 2 * I2C_CLOCKFreq)
+			result = (uint16_t)( PCLK1 / ( I2C_Config->ClockSpeed << 1 ) ) ;
+			tempreg |= result ;
+			I2CX->CCR = tempreg ;
+
+			// Configure TRISE Register
+			I2CX->TRISE = frequency + 1 ;
+
+
+		}
+		else
+		{
+			// Fast Mode NOT Supported
+		}
+
+		/*--------------------RC1 Configuration---------------------*/
+		tempreg = I2CX->CR1 ;
+
+		tempreg |= (uint16_t)( I2C_Config->I2C_ACK_Control | I2C_Config->General_Cal_Adresse_Detection | I2C_Config->I2C_Mode | I2C_Config->StretchMode ) ;
+
+		I2CX->CR1 = tempreg ;
+
+		/*--------------------OAR1 & OAR2 Configuration---------------------*/
+
+		tempreg = 0 ;
+
+		if( I2C_Config->I2C_Slave_Addresse.Enable_Dual_Addresse == 1 )
+		{
+			tempreg = I2C_OAR2_ENDUAL ;
+			tempreg |= I2C_Config->I2C_Slave_Addresse.Secondary_Slave_Addresse << I2C_OAR2_ADD2_Pos ;
+			I2CX->OAR2 = tempreg ;
+		}
+
+		tempreg = 0 ;
+		tempreg |= I2C_Config->I2C_Slave_Addresse.Primary_Slave_Addresse << 1 ;
+		tempreg |= I2C_Config->I2C_Slave_Addresse.Addressing_Slave_Mode ;
+		I2CX->OAR1 = tempreg ;
+
+	}
+	else
+	{
+		// SMBUS NOT Supported
+	}
+
+	if( I2C_Config->P_Slave_Event_Callback != NULL )
+	{
+		I2CX->CR2 |= (I2C_CR2_ITERREN) ;
+		I2CX->CR2 |= (I2C_CR2_ITEVTEN) ;
+		I2CX->CR2 |= (I2C_CR2_ITBUFEN) ;
+		if(I2CX == I2C1)
+		{
+			NVIC_IRQ31_I2C1_EV_Enable ;
+			NVIC_IRQ32_I2C1_ER_Enable ;
+		}
+		else
+		{
+			NVIC_IRQ33_I2C2_EV_Enable ;
+			NVIC_IRQ34_I2C2_ER_Enable ;
+		}
+
+		I2CX->SR1 = 0 ;
+		I2CX->SR2 = 0 ;
+	}
+
+	I2CX->CR1 |= I2C_CR1_PE ;
+
+}
+
+
+/**================================================================
+ * @Fn               -MCAL_I2C_DEINIT
+ * @brief            -DEInitializes I2C
+ * @param [in]       -I2Cx: where x can be (1..2 depending on the device used)
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_I2C_DEINIT(I2C_TypDef* I2CX )
+{
+	if (I2CX == I2C1 )
+	{
+		NVIC_IRQ31_I2C1_EV_Disable ;
+		NVIC_IRQ32_I2C1_ER_Disable ;
+		RCC_I2C1_CLC_DIS() ;
+	}
+	else
+	{
+		NVIC_IRQ33_I2C2_EV_Disable ;
+		NVIC_IRQ34_I2C2_ER_Disable ;
+		RCC_I2C2_CLC_DIS() ;
+	}
+}
+
+
+
+/**================================================================
+ * @Fn               -MCAL_GPIO_I2C_SET_PINS
+ * @brief            -Initializes GPIO Pins
+ * @param [in]       -I2Cx: where x can be (1..2 depending on the device used)
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_GPIO_I2C_SET_PINS(I2C_TypDef* I2CX)
+{
+	GPIO_PinConfig_t PINCFG ;
+	if (I2CX == I2C1 )
+	{
+		// PB6 : I2C1.SCL
+		// PB7 : I2C1.SDA
+		PINCFG.GPIO_PinNumber = GPIO_PIN_6 ;
+		PINCFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_OD ;
+		PINCFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+		MCAL_GPIO_INIT(GPIOB, &PINCFG) ;
+
+		PINCFG.GPIO_PinNumber = GPIO_PIN_7 ;
+		PINCFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_OD ;
+		PINCFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+		MCAL_GPIO_INIT(GPIOB, &PINCFG) ;
+
+	}
+	else
+	{
+		// PB10 : I2C2.SCL
+		// PB11 : I2C2.SDA
+		PINCFG.GPIO_PinNumber = GPIO_PIN_10 ;
+		PINCFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_OD ;
+		PINCFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+		MCAL_GPIO_INIT(GPIOB, &PINCFG) ;
+
+		PINCFG.GPIO_PinNumber = GPIO_PIN_11 ;
+		PINCFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_OD ;
+		PINCFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+		MCAL_GPIO_INIT(GPIOB, &PINCFG) ;
+
+
+	}
+}
+
+/**================================================================
+ * @Fn               -MCAL_I2C_Master_TX
+ * @brief            -Send Buffer on I2C
+ * @param [in]       -I2Cx: where x can be (1..2 depending on the device used)
+ * @param [in]       -date_out: Buffer
+ * @param [in]       -data_len: Data length
+ * @param [in]       -Device_ADD:Slave Address
+ * @param [in]       -stop: With or Without stop
+ * @param [in]       -start: With or Without start
+ * @retval           -none
+ * Note              -none
+ */
+
+
+void MCAL_I2C_Master_TX(I2C_TypDef* I2CX ,uint16_t Device_ADD , uint8_t * date_out , uint32_t data_len , Stop_Condition stop , Repeated_Start start)
+{
+	int i  ;
+	I2C_Generate_Start(I2CX , en , start) ;
+	// Check EV5
+	while( ! I2C_Get_FlagStatus(I2CX , EV5 ) ) ;
+	//Send Address
+	I2C_Send_Address(I2CX , Device_ADD , Transmitter ) ;
+	// Check EV6
+	while( ! I2C_Get_FlagStatus(I2CX , EV6 ) ) ;
+	// Check TRA , BUSY , MSL , TXE Flags
+	while( ! I2C_Get_FlagStatus(I2CX , Master_ByteTX ) ) ;
+	// Send Data
+	for(i = 0 ; i < data_len ; i++)
+	{
+		I2CX->DR = date_out[i] ;
+		//Check EV8
+		while( ! I2C_Get_FlagStatus(I2CX , EV8 ) ) ;
+	}
+	//Generate Stop
+	if( stop == With_Stop )
+	{
+		I2C_Generate_Stop(I2CX , en);
+	}
+
+}
+
+
+/**================================================================
+ * @Fn               -MCAL_I2C_Master_RX
+ * @brief            -Send Buffer on I2C
+ * @param [in]       -I2Cx: where x can be (1..2 depending on the device used)
+ * @param [in]       -date_in: Buffer
+ * @param [in]       -data_len: Data length
+ * @param [in]       -Device_ADD:Slave Address
+ * @param [in]       -stop: With or Without stop
+ * @param [in]       -start: With or Without start
+ * @retval           -none
+ * Note              -none
+ */
+
+
+void MCAL_I2C_Master_RX(I2C_TypDef* I2CX ,uint16_t Device_ADD , uint8_t * date_in , uint32_t data_len , Stop_Condition stop , Repeated_Start start)
+{
+	uint8_t index = (I2CX == I2C1 ?I2C1_Index :I2C2_Index) ;
+	int i  ;
+	I2C_Generate_Start(I2CX , en , start) ;
+	// Check EV5
+	while( ! I2C_Get_FlagStatus(I2CX , EV5 ) ) ;
+	//Send Address
+	I2C_Send_Address(I2CX , Device_ADD , Reciever ) ;
+	// Check EV6
+	while( ! I2C_Get_FlagStatus(I2CX , EV6 ) ) ;
+	I2C_ACK_Config(I2CX , en);
+
+	if( data_len )
+	{
+		for( i = data_len ; i > 1 ; i--)
+		{
+			//Wait until RXNE Is 1
+			while( ! I2C_Get_FlagStatus(I2CX , EV7 ) ) ;
+			*date_in = I2CX->DR ;
+			date_in++ ;
+		}
+		I2C_ACK_Config(I2CX , dis);
+	}
+	if( stop == With_Stop )
+	{
+		I2C_Generate_Stop(I2CX , en);
+	}
+
+	if(Glopal_I2C_Config[index].I2C_ACK_Control == I2C_ACK_Enable)
+	{
+		I2C_ACK_Config(I2CX , en);
+	}
+
+}
+
+
+
+/*==============================================================================================
+ * ==================              ISR Functions              ==================
+ * ==============================================================================================
+ * */

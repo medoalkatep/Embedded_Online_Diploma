@@ -1,0 +1,49 @@
+/*
+ ============================================================================
+ Name        : assignments-lesson-.c
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : Collision Avoidence
+ ============================================================================
+ */
+
+#include "CA.h"
+
+int CA_speed     = 0 ;
+int CA_distance  = 0 ;
+int CA_threshold = 50 ;
+
+void (*CA_state)();
+
+STATE_DEFINE(CA_Waiting)
+{
+	CA_State_id = CA_Waiting ;
+	CA_speed     = 0 ;
+	CA_distance = US_Get_Distance(45 , 55 , 1) ;
+	(CA_distance <= CA_threshold)? (CA_state = STATE(CA_Waiting)) : (CA_state = STATE(CA_Driving)) ;
+	printf("CA_Waiting State :  Distance = %d  ,    Speed = %d \n" , CA_distance , CA_speed) ;
+}
+STATE_DEFINE(CA_Driving)
+{
+	CA_State_id = CA_Driving ;
+	CA_speed     = 30 ;
+	CA_distance = US_Get_Distance(45 , 55 , 1) ;
+	(CA_distance <= CA_threshold)? (CA_state = STATE(CA_Waiting)) : (CA_state = STATE(CA_Driving)) ;
+	printf("CA_Driving State :  Distance = %d  ,    Speed = %d \n" , CA_distance , CA_speed) ;
+}
+
+int US_Get_Distance(int b , int e , int count)
+{
+
+	int i ;
+	for(i = 0 ; i < count ; i++)
+	{
+		int rand_number = (rand() % (e - b + 1 )) + b ;
+		return rand_number ;
+	}
+
+}
+
+
+

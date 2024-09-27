@@ -1,0 +1,61 @@
+/*
+============================================================================
+Name        : assignments-lesson-8/3.c
+Author      : Mohamed Ahmed Mohamed Osman
+Version     :
+Copyright   : Your copyright notice
+Description : UART
+============================================================================
+*/
+
+
+#ifndef UART_H_
+#define UART_H_
+
+#include "avr/io.h"
+#include "stdio.h"
+#include "stdint.h"
+#include "stdlib.h"
+
+#define set_bit(reg , bit)  (reg |= (1 << bit))
+
+#define clear_bit(reg , bit)  (reg &= ~(1 << bit))
+
+#define read_bit(reg , bit)  ( (reg >> bit) & 1 )
+
+#define toggle_bit(reg , bit)  (reg ^= (1 << bit))
+
+#define defaultstop            '\r'
+
+void UART_INIT(void);
+
+
+void UART_SEND(uint8_t data);
+
+uint8_t UART_RECIEVE(void);
+
+//void UART_SEND_string(unsigned char* data);
+
+void UART_SEND_string(uint8_t* data);
+
+void UART_Recieve_string(uint8_t* data);
+
+uint8_t UART_Recieve_Check(uint8_t* data);
+
+void UART_SEND_NoBlock(uint8_t data);
+
+uint8_t UART_RECIEVE_NoBlock(void);
+
+void UART_TX_Interrupt_EN(void);
+
+void UART_TX_Interrupt_DIS(void);
+
+void UART_RX_Interrupt_EN(void);
+
+void UART_RX_Interrupt_DIS(void);
+
+void UART_SEND_string_Asyn(uint8_t* data);
+
+
+
+#endif /* UART_H_ */

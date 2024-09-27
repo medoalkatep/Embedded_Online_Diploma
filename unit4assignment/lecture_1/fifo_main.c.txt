@@ -1,0 +1,33 @@
+/*
+ ============================================================================
+ Name        : assignments-lesson-.c
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : FIFO
+ ============================================================================
+ */
+#include "fifo.h"
+void main ()
+{
+	fifo_buf_t FIFO_UART ;
+	element_type i , temp = 0 ;
+	if (fifo_init(&FIFO_UART , buf , 5) == fifo_no_error)
+		printf("FIFP INIT-------DONE-------\n");
+	for(i=0 ; i < 7 ; i++)
+	{
+		if(fifo_enqueue(&FIFO_UART , i) == fifo_no_error)
+			printf("FIFO ENQUEUE------done\n");
+		else
+			printf("FIFO ENQUEUE------failed\n");
+
+		printf("FIFO ENQUEUE (%X) \n",i);
+	}
+	fifo_print(&FIFO_UART);
+	if(fifo_dequeue(&FIFO_UART , &temp) == fifo_no_error)
+		printf("FIFO DEQUEUE (%X)-------Done \n",temp);
+	if(fifo_dequeue(&FIFO_UART , &temp) == fifo_no_error)
+		printf("FIFO DEQUEUE (%X)-------Done \n",temp);
+	fifo_print(&FIFO_UART);
+
+}

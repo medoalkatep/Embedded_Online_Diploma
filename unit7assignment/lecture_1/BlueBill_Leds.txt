@@ -1,0 +1,80 @@
+/*
+ ============================================================================
+ Name        : assignments-7/1
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : Stm32f103c6 LED ON BLUEBILL
+ ============================================================================
+ */
+#include <stdint.h>
+#include <stdio.h>
+
+#define RCC_BASE         0x40021000
+#define GPIOA_BASE       0x40010800
+#define GPIOB_BASE       0x40010C00
+
+#define RCC_ABP2ENR       *(volatile uint32_t *)(RCC_BASE + 0x18)
+#define GPIOA_CRH         *(volatile uint32_t *)(GPIOA_BASE + 0x04)
+#define GPIOA_CRL         *(volatile uint32_t *)(GPIOA_BASE + 0x00)
+#define GBIOA_ODR         *(volatile uint32_t *)(GPIOA_BASE + 0x0C)
+#define GBIOA_IDR         *(volatile uint32_t *)(GPIOA_BASE + 0x08)
+
+#define GPIOB_CRH         *(volatile uint32_t *)(GPIOB_BASE + 0x04)
+#define GPIOB_CRL         *(volatile uint32_t *)(GPIOB_BASE + 0x00)
+#define GBIOB_ODR         *(volatile uint32_t *)(GPIOB_BASE + 0x0C)
+#define GBIOB_IDR         *(volatile uint32_t *)(GPIOB_BASE + 0x08)
+
+void clock_init()
+{
+	RCC_ABP2ENR |= (1<<2) ;
+
+	RCC_ABP2ENR |= (1<<3) ;
+}
+
+void GPIO_init()
+{
+	//Port A1 configuration (floating point input)
+	GPIOA_CRL &= ~(0b11<<4) ;
+	GPIOA_CRL |=  (0b01<<6) ;
+	//Port B1 configuration (pushpull output)
+	GPIOB_CRL &= ~(0b11<<6) ;
+	GPIOB_CRL |=  (0b01<<4) ;
+	//Port A13 configuration (floating point input)
+	GPIOA_CRH &= ~(0b11<<20) ;
+	GPIOA_CRH |=  (0b01<<22) ;
+	//Port B13 configuration (pushpull output)
+	GPIOB_CRH &= ~(0b11<<22) ;
+	GPIOB_CRH |=  (0b01<<20) ;
+}
+
+void wait_time(int x)
+{
+	unsigned int i , j ;
+	for(i = 0 ; i < x ; i++)
+		for(j = 0 ; j < 255 ; j++) ;
+}
+int main (void)
+{
+
+	clock_init();
+	GPIO_init ();
+
+
+	while(1)
+	{
+		if( ((GBIOA_IDR & (1<<1)) >> 1) == 0 )
+		{
+			GBIOB_ODR ^= 1<<1 ;
+			while( ((GBIOA_IDR & (1<<1)) >> 1) == 0 ) ;
+		}
+		if( ((GBIOA_IDR & (1<<13)) >> 13) == 1 )
+		{
+			GBIOB_ODR ^= 1<<13 ;
+		}
+
+		wait_time(1);
+	}
+
+}
+

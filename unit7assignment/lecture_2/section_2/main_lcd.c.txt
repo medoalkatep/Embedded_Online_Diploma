@@ -1,0 +1,23 @@
+/*
+============================================================================
+Name        : assignments-lesson-7/2.c
+Author      : Mohamed Ahmed Mohamed Osman
+Version     :
+Copyright   : Your copyright notice
+Description : LCD AND KEYPAD  
+============================================================================
+*/
+
+#include  "avr/io.h"
+#include "LCD_Driver/LCD.h"
+
+int main(void)
+{
+    LCD_INIT() ;
+	LCD_WRITE_STRING("Mohamed Ahmed Mohamed Osman") ;
+	
+    while (1) 
+    {
+    }
+}
+

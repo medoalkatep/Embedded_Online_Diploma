@@ -1,0 +1,26 @@
+/*
+ ============================================================================
+ Name        : assignments-lesson-8/4.c
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : SPI Master
+ ============================================================================
+ */
+
+#include <avr/io.h>
+#include "util/delay.h"
+#include "SPI.h"
+
+int main(void)
+{
+    SPI_MASTER_INIT();
+	DDRA = 0xFF ;
+	unsigned char data ;
+   for(data = 0 ; data <= 255 ; data ++)
+   {
+	   _delay_ms(1000);
+	   DDRA = SPI_MASTER_TX(data);
+   }
+}
+

@@ -1,0 +1,25 @@
+/*
+ * utils.h
+ *
+ * Created: 24/07/2024 02:19:30 م
+ *  Author: Mohamed Ahmed Mohamed Osman
+ */ 
+
+
+#ifndef UTILS_H_
+#define UTILS_H_
+
+#define set_bit(reg , bit)  (reg |= (1 << bit))
+
+#define clear_bit(reg , bit)  (reg &= ~(1 << bit))
+
+#define read_bit(reg , bit)  ( (reg >> bit) & 1 )
+
+#define toggle_bit(reg , bit)  (reg ^= (1 << bit))
+
+
+
+
+#endif /* UTILS_H_ */
+
+

@@ -1,0 +1,406 @@
+/*
+ ============================================================================
+ Name        : assignments-8/5
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : STM32F103C6 SPI DRIVER
+ ============================================================================
+ */
+
+//-----------------------------
+//Includes
+//-----------------------------
+
+#include "Stm32_F103C6_SPI.h"
+
+
+/*===================================================================
+ *             Global Variables
+ * ==================================================================
+ */
+
+SPI_Config* Glopal_SPI_Config[2] = {NULL , NULL} ;
+
+
+/*===================================================================
+ *             Generic Macros
+ * ==================================================================
+ */
+
+#define SPI1_Index    0
+#define SPI2_Index    1
+
+#define SPI_SR_TXE           ((uint8_t) 0x02) // TX Empty
+#define SPI_SR_RXNE          ((uint8_t) 0x01) // RX not empty
+
+/*===================================================================
+ *             Generic Functions
+ * ==================================================================
+ */
+
+
+
+/**================================================================
+ * @Fn               -MCAL_SPI_INIT
+ * @brief            -Initializes SPI
+ * @param [in]       -SPIx: where x can be (1..2 depending on the device used)
+ * @param [in]       -SPI_Config: All SPI Configuration
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_SPI_INIT(SPI_TypDef* SPIX ,SPI_Config* SPI_Config)
+{
+	//Safety for Registers
+	uint16_t temp_CR1 = 0 ;
+	uint16_t temp_CR2 = 0 ;
+
+	if(SPIX == SPI1)
+	{
+		Glopal_SPI_Config[SPI1_Index] = SPI_Config ;
+		RCC_SPI1_CLC_EN() ;
+	}
+	else if(SPIX == SPI2)
+	{
+		Glopal_SPI_Config[SPI2_Index] = SPI_Config ;
+		RCC_SPI2_CLC_EN() ;
+	}
+
+	// Enable SPI
+	temp_CR1 = (0x1U << 6) ;
+
+	// Master or Slave
+	temp_CR1 |= SPI_Config->Device_Mode ;
+
+	// SPI Communication mode
+	temp_CR1 |= SPI_Config->Communication_Mode ;
+
+	// SPI Frame Format
+	temp_CR1 |= SPI_Config->Frame_Format ;
+
+	// SPI Data Size
+	temp_CR1 |= SPI_Config->Data_Size ;
+
+	// SPI Clock Polarity
+	temp_CR1 |= SPI_Config->CLK_Polarity ;
+
+	// SPI Clock Phase
+	temp_CR1 |= SPI_Config->CLK_Phase ;
+
+	// SPI NSS
+	if(SPI_Config->NSS == SPI_NSS_Hard_Master_Output_Enable)
+	{
+		temp_CR2 |= SPI_Config->NSS ;
+	}
+	else if(SPI_Config->NSS == SPI_NSS_Hard_Master_Output_Disable)
+	{
+		temp_CR2 &= SPI_Config->NSS ;
+	}
+	else
+	{
+		temp_CR1 |= SPI_Config->NSS ;
+	}
+
+	// SPI Baud Rate
+	temp_CR1 |= SPI_Config->Baud_Rate_Pre ;
+
+	// SPI IRQ Enable
+	if (SPI_Config->IRQ_Enable != SPI_IRQ_Enable_None)
+	{
+		temp_CR2 |= SPI_Config->IRQ_Enable ;
+		if(SPIX == SPI1)
+		{
+			NVIC_IRQ35_SPI1_Enable ;
+		}
+		else if(SPIX == SPI2)
+		{
+			NVIC_IRQ36_SPI2_Enable ;
+		}
+	}
+
+	SPIX->CR1 = temp_CR1 ;
+	SPIX->CR2 = temp_CR2 ;
+
+}
+
+
+/**================================================================
+ * @Fn               -MCAL_SPI_DEINIT
+ * @brief            -DEInitializes SPI
+ * @param [in]       -SPIx: where x can be (1..2 depending on the device used)
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_SPI_DEINIT(SPI_TypDef* SPIX )
+{
+	if(SPIX == SPI1)
+	{
+		RCC_SPI1_CLC_DIS() ;
+		NVIC_IRQ35_SPI1_Disable ;
+	}
+	else if(SPIX == SPI2)
+	{
+		RCC_SPI2_CLC_DIS() ;
+		NVIC_IRQ36_SPI2_Disable ;
+	}
+}
+
+/**================================================================
+ * @Fn               -MCAL_SPI_Send_Date
+ * @brief            -Send Buffer on SPI
+ * @param [in]       -SPIx: where x can be (1..2 depending on the device used)
+ * @param [in]       -pTXBuffer: Buffer
+ * @param [in]       -PolloingEN: Enable Polling or Disable it
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_SPI_Send_Date(SPI_TypDef* SPIX ,uint16_t * pTXBuffer , enum Polling_M PolloingEN)
+{
+	if(PolloingEN == enable)
+	{
+		while( !(SPIX->SR & SPI_SR_TXE) ) ;
+	}
+
+	SPIX->DR = *pTXBuffer ;
+}
+
+
+
+
+
+
+/**================================================================
+ * @Fn               -MCAL_SPI_Receive_Date
+ * @brief            -Receive Buffer on SPI
+ * @param [in]       -SPIx: where x can be (1..2 depending on the device used)
+ * @param [in]       -pRXBuffer: Buffer
+ * @param [in]       -PolloingEN: Enable Polling or Disable it
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_SPI_Receive_Date(SPI_TypDef* SPIX ,uint16_t * pRXBuffer , enum Polling_M PolloingEN)
+{
+	if(PolloingEN == enable)
+	{
+		while( !(SPIX->SR & SPI_SR_RXNE) ) ;
+	}
+
+	*pRXBuffer = SPIX->DR ;
+}
+
+/**================================================================
+ * @Fn               -MCAL_SPI_Receive_Send
+ * @brief            -Receive and Send Buffer on SPI
+ * @param [in]       -SPIx: where x can be (1..2 depending on the device used)
+ * @param [in]       -pRXBuffer: Buffer
+ * @param [in]       -PolloingEN: Enable Polling or Disable it
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_SPI_Receive_Send(SPI_TypDef* SPIX ,uint16_t * pTXBuffer , enum Polling_M PolloingEN)
+{
+	if(PolloingEN == enable)
+	{
+		while( !(SPIX->SR & SPI_SR_TXE) ) ;
+	}
+
+	SPIX->DR = *pTXBuffer ;
+
+	if(PolloingEN == enable)
+	{
+		while( !(SPIX->SR & SPI_SR_RXNE) ) ;
+	}
+
+	*pTXBuffer = SPIX->DR ;
+
+}
+
+
+
+/**================================================================
+ * @Fn               -MCAL_GPIO_SPI_SET_PINS
+ * @brief            -Initializes GPIO Pins
+ * @param [in]       -SPIx: where x can be (1..2 depending on the device used)
+ * @retval           -none
+ * Note              -none
+ */
+
+void MCAL_GPIO_SPI_SET_PINS(SPI_TypDef* SPIX)
+{
+	GPIO_PinConfig_t PIN_CFG ;
+	if(SPIX == SPI1)
+	{
+		// PA4 : NSS
+		// PA5 : SCK
+		// PA6 : MISO
+		// PA7 : MOSI
+		if (Glopal_SPI_Config[SPI1_Index]->Device_Mode == SPI_Device_MODE_Master)
+		{
+			// PA4 : NSS
+			switch(Glopal_SPI_Config[SPI1_Index]->NSS)
+			{
+			case SPI_NSS_Hard_Master_Output_Disable :
+				PIN_CFG.GPIO_PinNumber = GPIO_PIN_4 ;
+				PIN_CFG.GPIO_MODE = GPIO_MODE_INPUT_FLO ;
+				MCAL_GPIO_INIT(GPIOA, &PIN_CFG) ;
+
+				break ;
+			case SPI_NSS_Hard_Master_Output_Enable :
+				PIN_CFG.GPIO_PinNumber = GPIO_PIN_4 ;
+				PIN_CFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+				PIN_CFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+				MCAL_GPIO_INIT(GPIOA, &PIN_CFG) ;
+
+				break ;
+			}
+			// PA5 : SCK
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_5 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+			PIN_CFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+			MCAL_GPIO_INIT(GPIOA, &PIN_CFG) ;
+
+			// PA6 : MISO
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_6 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_INPUT_FLO ;
+			MCAL_GPIO_INIT(GPIOA, &PIN_CFG) ;
+			// PA7 : MOSI
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_7 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+			PIN_CFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+			MCAL_GPIO_INIT(GPIOA, &PIN_CFG) ;
+
+		}
+		else // Slave
+		{
+			// PA4 : NSS
+			if (Glopal_SPI_Config[SPI1_Index]->NSS == SPI_NSS_Hard_Slave)
+			{
+				PIN_CFG.GPIO_PinNumber = GPIO_PIN_4 ;
+				PIN_CFG.GPIO_MODE = GPIO_MODE_INPUT_FLO ;
+				MCAL_GPIO_INIT(GPIOA, &PIN_CFG) ;
+			}
+			// PA5 : SCK
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_5 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_INPUT_FLO ;
+			MCAL_GPIO_INIT(GPIOA, &PIN_CFG) ;
+
+			// PA6 : MISO
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_6 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+			PIN_CFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+			MCAL_GPIO_INIT(GPIOA, &PIN_CFG) ;
+
+			// PA7 : MOSI
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_7 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_INPUT_FLO ;
+			MCAL_GPIO_INIT(GPIOA, &PIN_CFG) ;
+		}
+
+
+
+	}
+
+
+	else if (SPIX == SPI2)
+	{
+		// PB12 : NSS
+		// PB13 : SCK
+		// PB14 : MISO
+		// PB15 : MOSI
+		if (Glopal_SPI_Config[SPI2_Index]->Device_Mode == SPI_Device_MODE_Master)
+		{
+			// PB12 : NSS
+			switch(Glopal_SPI_Config[SPI2_Index]->NSS)
+			{
+			case SPI_NSS_Hard_Master_Output_Disable :
+				PIN_CFG.GPIO_PinNumber = GPIO_PIN_12 ;
+				PIN_CFG.GPIO_MODE = GPIO_MODE_INPUT_FLO ;
+				MCAL_GPIO_INIT(GPIOB, &PIN_CFG) ;
+
+				break ;
+			case SPI_NSS_Hard_Master_Output_Enable :
+				PIN_CFG.GPIO_PinNumber = GPIO_PIN_12 ;
+				PIN_CFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+				PIN_CFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+				MCAL_GPIO_INIT(GPIOB, &PIN_CFG) ;
+
+				break ;
+			}
+			// PB13 : SCK
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_13 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+			PIN_CFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+			MCAL_GPIO_INIT(GPIOB, &PIN_CFG) ;
+
+			// PB14 : MISO
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_14 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_INPUT_FLO ;
+			MCAL_GPIO_INIT(GPIOB, &PIN_CFG) ;
+			// PB15 : MOSI
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_15 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+			PIN_CFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+			MCAL_GPIO_INIT(GPIOB, &PIN_CFG) ;
+
+		}
+		else // Slave
+		{
+			// PB12 : NSS
+			if (Glopal_SPI_Config[SPI2_Index]->NSS == SPI_NSS_Hard_Slave)
+			{
+				PIN_CFG.GPIO_PinNumber = GPIO_PIN_12 ;
+				PIN_CFG.GPIO_MODE = GPIO_MODE_INPUT_FLO ;
+				MCAL_GPIO_INIT(GPIOB, &PIN_CFG) ;
+			}
+			// PB13 : SCK
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_13 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_INPUT_FLO ;
+			MCAL_GPIO_INIT(GPIOB, &PIN_CFG) ;
+
+			// PB14 : MISO
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_14 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_OUTPUT_AF_PP ;
+			PIN_CFG.GPIO_OUTPUT_SPEED = GPIO_OUTPUT_SPEED_10M ;
+			MCAL_GPIO_INIT(GPIOB, &PIN_CFG) ;
+
+			// PB15 : MOSI
+			PIN_CFG.GPIO_PinNumber = GPIO_PIN_15 ;
+			PIN_CFG.GPIO_MODE = GPIO_MODE_INPUT_FLO ;
+			MCAL_GPIO_INIT(GPIOB, &PIN_CFG) ;
+		}
+	}
+
+
+}
+
+
+
+/*==============================================================================================
+ * ==================              ISR Functions              ==================
+ * ==============================================================================================
+ * */
+
+void SPI1_IRQHandler()
+{
+	struct S_IRQ_SRC irq_src ;
+	irq_src.TXE  = ( (SPI1->SR & (1<<1)) >> 1 ) ;
+	irq_src.RXNE = ( (SPI1->SR & (1<<0)) >> 0 ) ;
+	irq_src.ERRI = ( (SPI1->SR & (1<<4)) >> 4 ) ;
+
+	Glopal_SPI_Config[SPI1_Index]->P_IRQ_CallBack(irq_src) ;
+}
+
+void SPI2_IRQHandler()
+{
+	struct S_IRQ_SRC irq_src ;
+	irq_src.TXE  = ( (SPI2->SR & (1<<1)) >> 1 ) ;
+	irq_src.RXNE = ( (SPI2->SR & (1<<0)) >> 0 ) ;
+	irq_src.ERRI = ( (SPI2->SR & (1<<4)) >> 4 ) ;
+	Glopal_SPI_Config[SPI2_Index]->P_IRQ_CallBack(irq_src) ;
+}
+

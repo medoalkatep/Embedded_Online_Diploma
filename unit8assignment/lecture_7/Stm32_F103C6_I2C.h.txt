@@ -1,0 +1,212 @@
+/*
+ ============================================================================
+ Name        : assignments-8/7
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : STM32F103C6 I2C DRIVER
+ ============================================================================
+ */
+
+#ifndef INC_STM32_F103C6_I2C_H_
+#define INC_STM32_F103C6_I2C_H_
+
+//-----------------------------
+//Includes
+//-----------------------------
+
+#include "stm32f103x6.h"
+#include "Stm32_F103C6_Gpio.h"
+
+
+// Structs
+
+struct I2C_Slave_Device_Addresse
+{
+	uint16_t    Enable_Dual_Addresse ; // 1-Enable     0- Disable
+
+	uint16_t    Primary_Slave_Addresse ;
+
+	uint16_t    Secondary_Slave_Addresse ;
+
+	uint32_t    Addressing_Slave_Mode ; // @ I2C_Addressing_Slave_Define
+};
+
+
+/*===================================================================
+ *             Generic Macros
+ * ==================================================================
+ */
+
+#define I2C_Event_Master_ByteTX_Flag                ( (uint32_t)0x00070080 )
+
+//=================================================
+// Enums Configurations References
+//=================================================
+
+typedef enum
+{
+	I2C_EV_Stop ,
+	I2C_ERROR_AF ,
+	I2C_EV_ADDR_Matched ,
+	I2C_EV_DATA_REQ ,
+	I2C_EV_DATA_REC
+
+}Slave_State;
+
+
+typedef enum
+{
+	With_Stop ,
+	Without_Stop
+}Stop_Condition;
+
+typedef enum
+{
+	Start  ,
+	RepeatedStart
+}Repeated_Start;
+
+typedef enum
+{
+	dis = 0 ,
+	en  = 1
+}Function_State;
+
+typedef enum
+{
+	Reset = 0 ,
+	Set   = 1
+}Flag_Status;
+
+typedef enum
+{
+	I2C_Flag_Busy = 0 ,
+	EV5   ,
+	EV6   ,
+	EV8   ,
+	EV8_1 ,
+	EV7   ,
+	Master_ByteTX = ( (uint32_t)0x00070080 )
+
+}Status;
+
+
+typedef enum
+{
+	Transmitter = 0 ,
+	Reciever    = 1
+}I2C_Direction;
+
+// Configuration structure
+
+typedef struct
+{
+	uint32_t    ClockSpeed ;   // Specifies the clock frequency
+	          //This parameter must be set @ ref I2C_ClockSpeed_Define
+
+	uint32_t    StretchMode	 ;  //This parameter must be set @ ref I2C_StretchMode_Define
+
+	uint32_t    I2C_Mode ;   // Specifies the I2C mode
+		          //This parameter must be set @ ref I2C_Mode_Define
+
+	struct I2C_Slave_Device_Addresse    I2C_Slave_Addresse ;
+
+	uint32_t    I2C_ACK_Control ;   // Enable or Disable the I2C ACK
+			          //This parameter must be set @ ref I2C_ACK_Control_Define
+
+	uint32_t    General_Cal_Adresse_Detection ; // @ ref I2C_ENGC_Define
+
+
+	void(* P_Slave_Event_Callback)(Slave_State State) ; // @ ref I2C_ENGC_Define
+
+
+}I2C_Config;
+
+
+//=================================================
+// Macros Configurations References
+//=================================================
+
+
+// @ ref I2C_ClockSpeed_Define
+
+#define I2C_SCLK_SM_50K                  (50000U)
+#define I2C_SCLK_SM_100K                 (100000U)
+#define I2C_SCLK_FM_200K                 (200000U)
+#define I2C_SCLK_FM_300K                 (400000U)
+
+
+// @ ref I2C_StretchMode_Define
+
+#define I2C_StretchMode_Enable          (0x00000000U)
+#define I2C_StretchMode_Disable         I2C_CR1_NOSTRETCH
+
+
+// @ ref I2C_Mode_Define
+
+#define I2C_Mode_I2C                    0
+#define I2C_Mode_SMBUS                 I2C_CR1_SMBUS
+
+
+// @ I2C_Addressing_Slave_Define
+
+#define I2C_Addressing_Slave_7_bit        (0x00000000U)
+#define I2C_Addressing_Slave_10_bit       (uint16_t)( 1 << 15)
+
+
+// @ ref I2C_ACK_Control_Define
+
+#define I2C_ACK_Enable                     I2C_CR1_ACK
+#define I2C_ACK_Disable                    (uint16_t)(0x0000)
+
+// @ ref I2C_ENGC_Define
+
+#define I2C_ENGC_Enable                     I2C_CR1_ENGC
+#define I2C_ENGC_Disable                    (0x00000000U)
+
+
+
+/*
+ * ========================================================================================
+ * 					    	APIs Supported By "MCAL I2C DRIVER"
+ * ========================================================================================
+ */
+
+
+void MCAL_I2C_INIT(I2C_TypDef* I2CX ,I2C_Config* I2C_Config) ;
+
+void MCAL_I2C_DEINIT(I2C_TypDef* I2CX ) ;
+
+void MCAL_GPIO_I2C_SET_PINS(I2C_TypDef* I2CX);
+
+// Master Polling Mechanism
+
+void MCAL_I2C_Master_TX(I2C_TypDef* I2CX ,uint16_t Device_ADD , uint8_t * date_out , uint32_t data_len , Stop_Condition stop , Repeated_Start start);
+
+void MCAL_I2C_Master_RX(I2C_TypDef* I2CX ,uint16_t Device_ADD , uint8_t * date_in , uint32_t data_len , Stop_Condition stop , Repeated_Start start);
+
+
+// Slave Interrupt Mechanism
+
+
+
+
+
+/*===================================================================
+ *             Generic APIs
+ * ==================================================================
+ */
+
+void I2C_Generate_Start(I2C_TypDef* I2CX , Function_State NewState , Repeated_Start start) ;
+
+Flag_Status  I2C_Get_FlagStatus(I2C_TypDef* I2CX , Status flag) ;
+
+void I2C_Send_Address(I2C_TypDef* I2CX , uint16_t address , I2C_Direction direction) ;
+
+void I2C_Generate_Stop(I2C_TypDef* I2CX , Function_State NewState ) ;
+
+void I2C_ACK_Config(I2C_TypDef* I2CX , Function_State NewState );
+
+
+#endif /* INC_STM32_F103C6_I2C_H_ */

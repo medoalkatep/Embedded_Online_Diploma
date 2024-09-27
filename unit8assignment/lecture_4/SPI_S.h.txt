@@ -1,0 +1,32 @@
+/*
+ ============================================================================
+ Name        : assignments-lesson-8/4.c
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : SPI Master
+ ============================================================================
+ */
+
+
+#ifndef SPI_H_
+#define SPI_H_
+
+#include "avr/io.h"
+
+#define F_CPU   1000000UL
+
+#define SS		 4
+#define MOSI     5
+#define MISO     6
+#define SCK      7
+
+
+void SPI_MASTER_INIT(void) ;
+
+unsigned char SPI_Slave_RX(unsigned char data) ;
+
+
+
+
+#endif /* SPI_H_ */

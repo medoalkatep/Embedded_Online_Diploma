@@ -1,0 +1,67 @@
+/*
+ ============================================================================
+ Name        : assignments-8/3
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : STM32F103C6 RCC DRIVER
+ ============================================================================
+ */
+
+#ifndef INC_STM32_F103C6_RCC_H_
+#define INC_STM32_F103C6_RCC_H_
+
+//-----------------------------
+//Includes
+//-----------------------------
+
+#include "stm32f103x6.h"
+#include "Stm32_F103C6_Gpio.h"
+
+
+
+// Configuration structure
+
+
+
+//=================================================
+// Macros Configurations References
+//=================================================
+
+
+#define HSI_RC_CLK             (uint32_t)8000000
+#define HSE_RC_CLK             (uint32_t)16000000
+
+
+
+//=========================================
+// Macro Configuration Reference
+//=========================================
+
+
+
+
+
+
+/*
+ * ========================================================================================
+ * 					    	APIs Supported By "MCAL RCC DRIVER"
+ * ========================================================================================
+ */
+
+
+uint32_t MCAL_RCC_GETSYSCLK_FREQ(void);
+
+uint32_t MCAL_RCC_GETHCLK_FREQ(void);
+
+uint32_t MCAL_RCC_GETPCLK1_FREQ(void);
+
+uint32_t MCAL_RCC_GETPCLK2_FREQ(void);
+
+
+
+
+
+
+
+#endif /* INC_STM32_F103C6_RCC_H_ */

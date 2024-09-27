@@ -1,0 +1,37 @@
+/*
+============================================================================
+Name        : assignments-lesson-7/2.c
+Author      : Mohamed Ahmed Mohamed Osman
+Version     :
+Copyright   : Your copyright notice
+Description : LCD AND KEYPAD  
+============================================================================
+*/
+
+#include  "avr/io.h"
+#include "LCD_Driver/LCD.h"
+#include "KeyPad_Driver/KeyPad.h"
+
+int main(void)
+{
+    LCD_INIT() ;
+	KEYPAD_INIT() ;
+	char pressed_key ;
+	
+    while (1) 
+    {
+		pressed_key = KEYPAD_GET_CHAR() ;
+		switch(pressed_key)
+		{
+			case '!' :
+			LCD_clear_screen() ;
+			break ;
+			case 'N' :
+			break ;
+			default:
+			LCD_WRITE_CHARACTER(pressed_key) ;
+			break ;
+		}
+    }
+}
+

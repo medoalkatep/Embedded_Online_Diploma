@@ -1,0 +1,18 @@
+/*
+ * MemMap_T1.h
+ *
+ * Created: 24/07/2024 01:05:25 م
+ *  Author: Mohamed Ahmed Mohamed Osman
+ */ 
+
+
+#ifndef MEMMAP_T1_H_
+#define MEMMAP_T1_H_
+
+#define DDRA  *(volatile unsigned char *)(0x3A)
+#define PORTA *(volatile unsigned char *)(0x3B)
+
+
+
+
+#endif /* MEMMAP_T1_H_ */

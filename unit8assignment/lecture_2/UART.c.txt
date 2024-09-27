@@ -1,0 +1,60 @@
+/*
+============================================================================
+Name        : assignments-lesson-8/2.c
+Author      : Mohamed Ahmed Mohamed Osman
+Version     :
+Copyright   : Your copyright notice
+Description : UART 
+============================================================================
+*/
+
+#include "UART.h"
+
+
+void UART_INIT(void)
+{
+// Baud rate
+    // THE Rate is 9600  	
+	UBRRL = 51 ;
+	// Normal Speed Divided by 16
+	clear_bit(UCSRA , U2X) ;
+	
+	
+	
+// frame
+	// Choosing Asynchronous
+	clear_bit(UCSRC , UMSEL);
+	// 8 bit Data
+	set_bit(UCSRC , UCSZ0);
+	set_bit(UCSRC , UCSZ1);
+	clear_bit(UCSRB , UCSZ2);
+	
+	// Enable
+	set_bit(UCSRB , TXEN);
+	set_bit(UCSRB , RXEN);
+	
+}
+
+
+void UART_SEND(uint8_t data)
+{
+	while( !read_bit(UCSRA , UDRE) );
+	UDR = data ;
+}
+
+
+uint8_t UART_RECIEVE(void)
+{
+	while( !read_bit(UCSRA , RXC) );
+	return UDR ;
+}
+
+void UART_SEND_string(unsigned char* data)
+{
+	while( !read_bit(UCSRA , UDRE) );
+	while(*data)
+	{
+		UART_SEND(*data);
+		data++ ;
+	}
+}

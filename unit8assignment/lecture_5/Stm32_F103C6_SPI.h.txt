@@ -1,0 +1,183 @@
+/*
+ ============================================================================
+ Name        : assignments-8/5
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : STM32F103C6 SPI DRIVER
+ ============================================================================
+ */
+
+#ifndef INC_STM32_F103C6_SPI_H_
+#define INC_STM32_F103C6_SPI_H_
+
+//-----------------------------
+//Includes
+//-----------------------------
+
+#include "stm32f103x6.h"
+#include "Stm32_F103C6_Gpio.h"
+
+
+// Structs
+
+struct S_IRQ_SRC
+{
+	uint8_t TXE:1       ;  // TX Buffer empty interrupt
+	uint8_t RXNE:1      ;  // RX Buffer not empty interrupt
+	uint8_t ERRI:1	    ;  // Error interrupt
+	uint8_t Reserved:5  ;
+};
+
+// Configuration structure
+
+typedef struct
+{
+	uint16_t Device_Mode            ;  		      // Specifies the SPI operating mode
+												 //This parameter must be set @ ref SPI_Device_MODE_Define
+	uint16_t Communication_Mode     ;     		// Specifies the SPI bidirectional mode
+											   //This parameter must be set @ ref SPI_Communication_MODE_Define
+	uint16_t Frame_Format 			;         // Specifies the SPI LSB OR MSB
+											 //This parameter must be set @ ref SPI_Frame_Format_Define
+	uint16_t Data_Size 				;		// Specifies the SPI 8BITS OR 9BITS
+										   //This parameter must be set @ ref SPI_Data_Size_Define
+	uint16_t CLK_Polarity 			;			     // Specifies the SPI Clock Idle High or Low
+													//This parameter must be set @ ref SPI_CLK_Polarity_Define
+	uint16_t CLK_Phase				;		       // Specifies the SPI Clock First Edge or Second
+										          //This parameter must be set @ ref SPI_CLK_Phase_Define
+	uint16_t NSS 					;            // Specifies the SPI SS SW OR HW and Input or Output
+										    	//This parameter must be set @ ref SPI_NSS_Define
+
+	uint16_t IRQ_Enable 			;          // Enable or Disable the SPI TX/RX
+										      // This parameter must be set @ ref SPI_IRQ_Enable_Define
+
+
+	uint16_t Baud_Rate_Pre          ;       // Specifies the SPI Prescaler Value
+										   //This parameter must be set @ ref SPI_Baud_Rate_Pre_Define
+
+
+	void (* P_IRQ_CallBack)(struct S_IRQ_SRC irq_src)	; 	 // Set the C Function that will be called once the IRQ happens
+
+
+
+}SPI_Config;
+
+
+//=================================================
+// Macros Configurations References
+//=================================================
+
+// @ ref SPI_Device_MODE_Define
+
+#define SPI_Device_MODE_Slave          (0x00000000U)
+#define SPI_Device_MODE_Master         (0x1U << 2)     // CR1
+
+
+// @ ref SPI_Communication_MODE_Define
+
+#define SPI_Direction_2Lines               (0x00000000U)
+#define SPI_Direction_2Lines_RXOnly        (0x1U << 10)
+#define SPI_Direction_1Line_RXOnly		   (0x1U << 15)
+#define SPI_Direction_1Line_TXOnly         ((0x1U << 15) | (0x1U << 14))
+
+
+// @ ref SPI_Frame_Format_Define
+
+#define SPI_Frame_Format_MSB              (0x00000000U)
+#define SPI_Frame_Format_LSB              (0x1U << 7)
+
+
+// @ ref SPI_Data_Size_Define
+
+#define SPI_Data_Size_8Bit				   (0x00000000U)
+#define SPI_Data_Size_9Bit				   (0x1U << 11)
+
+
+// @ ref SPI_CLK_Polarity_Define
+
+#define SPI_CLK_Polarity_Low_when_idle      (0x00000000U)
+#define SPI_CLK_Polarity_high_when_idle     (0x1U << 1)
+
+
+// @ ref SPI_CLK_Phase_Define
+
+#define SPI_CLK_Phase_1Edge					(0x00000000U)
+#define SPI_CLK_Phase_2Edge					(0x1U << 0)
+
+
+// @ ref SPI_NSS_Define
+
+//HW
+#define SPI_NSS_Hard_Slave                                   (0x00000000U)
+#define SPI_NSS_Hard_Master_Output_Enable                    (0x1U << 2)
+#define SPI_NSS_Hard_Master_Output_Disable                   ~(0x1U << 2)
+
+//SW
+#define SPI_NSS_Soft_Reset                                 (0x1U << 9)
+#define SPI_NSS_Soft_Set                                   ( (0x1U << 9) | (0x1U << 8) )
+
+
+// @ ref SPI_IRQ_Enable_Define
+
+
+#define SPI_IRQ_Enable_None					    	(uint32_t)(0)
+#define SPI_IRQ_Enable_TXEIE						(uint32_t)(1 << 7)
+#define SPI_IRQ_Enable_RXNEIE						(uint32_t)(1 << 6)
+#define SPI_IRQ_Enable_ERRIE						(uint32_t)(1 << 5)
+
+
+
+// @ ref SPI_Baud_Rate_Pre_Define
+
+#define SPI_Baud_Rate_2                         (0x00000000U)
+#define SPI_Baud_Rate_4                         (0b001U << 3)
+#define SPI_Baud_Rate_8                         (0b010U << 3)
+#define SPI_Baud_Rate_16                        (0b011U << 3)
+#define SPI_Baud_Rate_32                        (0b100U << 3)
+#define SPI_Baud_Rate_64                        (0b101U << 3)
+#define SPI_Baud_Rate_128                       (0b110U << 3)
+#define SPI_Baud_Rate_256                       (0b111U << 3)
+
+
+//=================================================
+// Enums Configurations References
+//=================================================
+
+
+enum Polling_M
+{
+	enable ,
+	disable
+};
+
+
+/*
+ * ========================================================================================
+ * 					    	APIs Supported By "MCAL SPI DRIVER"
+ * ========================================================================================
+ */
+
+
+void MCAL_SPI_INIT(SPI_TypDef* SPIX ,SPI_Config* SPI_Config) ;
+
+void MCAL_SPI_DEINIT(SPI_TypDef* SPIX ) ;
+
+void MCAL_GPIO_SPI_SET_PINS(SPI_TypDef* SPIX);
+
+void MCAL_SPI_Send_Date(SPI_TypDef* SPIX ,uint16_t * pTXBuffer , enum Polling_M PolloingEN);
+
+void MCAL_SPI_Receive_Date(SPI_TypDef* SPIX ,uint16_t * pRXBuffer , enum Polling_M PolloingEN);
+
+void MCAL_SPI_Receive_Send(SPI_TypDef* SPIX ,uint16_t * pRXBuffer , enum Polling_M PolloingEN);
+
+
+
+
+
+
+
+
+
+
+
+#endif /* INC_STM32_F103C6_SPI_H_ */

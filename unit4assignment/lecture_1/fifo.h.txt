@@ -1,0 +1,39 @@
+/*
+ ============================================================================
+ Name        : assignments-lesson-.c
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : FIFO
+ ============================================================================
+ */
+#ifndef FIFO_H_
+#define FIFO_H_
+#include "stdio.h"
+#include "stdint.h"
+//Select the element type (uint8_t , uint16_t , uint32_t , ... )
+#define element_type uint8_t
+#define width 5
+element_type buf[width] ;
+typedef struct {
+	unsigned int length ;
+	unsigned int count ;
+	element_type* base ;
+	element_type* head ;
+	element_type* tail ;
+}fifo_buf_t;
+
+typedef enum
+{
+	fifo_no_error ,
+	fifo_full ,
+	fifo_empty,
+	fifo_null
+}fifo_status;
+
+fifo_status fifo_init (fifo_buf_t* fifo , element_type* buf , uint32_t length);
+fifo_status fifo_enqueue (fifo_buf_t* fifo , element_type item);
+fifo_status fifo_dequeue (fifo_buf_t* fifo , element_type* item);
+fifo_status fifo_is_full (fifo_buf_t* fifo);
+void fifo_print (fifo_buf_t* fifo);
+#endif

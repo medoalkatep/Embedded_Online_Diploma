@@ -1,0 +1,26 @@
+/*
+ ============================================================================
+ Name        : assignments-lesson-.c
+ Author      : Mohamed Ahmed Mohamed Osman
+ Version     :
+ Copyright   : Your copyright notice
+ Description : Collision Avoidence
+ ============================================================================
+ */
+
+#ifndef CA_H_
+#define CA_H_
+#include "state.h"
+#include "stdio.h"
+#include "stdlib.h"
+
+enum {
+	CA_Waiting ,
+	CA_Driving
+}CA_State_id;
+
+STATE_DEFINE(CA_Waiting);
+STATE_DEFINE(CA_Driving);
+
+extern void (*CA_state)();
+#endif
